@@ -1,4 +1,3 @@
 line_test.py
 *.pyc
 node_modules/
-line_auth.py
