@@ -1,16 +1,30 @@
 import requests
 import json
+import subprocess
 
 class LineAPI(object):
-    PROFILE_URL = 'https://t.line.naver.jp/rest/v1/profile'
-    CONTACTS_URL = 'https://t.line.naver.jp/rest/v1/contacts'
-    CONTACTS_SEARCH_URL = 'https://t.line.naver.jp/rest/v1/contacts/search'
-    CHATS_URL = 'https://t.line.naver.jp/rest/v1/chats'
-    GROUPS_URL = 'https://t.line.naver.jp/rest/v1/groups'
+    API_HOST = 'https://t.line.naver.jp'
+    PROFILE_URL = API_HOST + '/rest/v1/profile'
+    CONTACTS_URL = API_HOST + '/rest/v1/contacts'
+    CONTACTS_SEARCH_URL = API_HOST + '/rest/v1/contacts/search'
+    CHATS_URL = API_HOST + '/rest/v1/chats'
+    GROUPS_URL = API_HOST + '/rest/v1/groups'
+    RSA_KEY_URL = API_HOST + '/authct/v1/keys/line'
 
     def __init__(self, *args, **kwargs):
-        pairs = [pair.split('=') for pair in filter(lambda x: x!='', kwargs.get('cookies_str').split(';'))]
-        self.cookies = dict((pair[0], pair[1]) for pair in pairs)
+        cookies = kwargs.get('cookies_str')
+        if cookies is None:
+            email, password = kwargs.get('email'), kwargs.get('password')
+            if email and password:
+                #pass email and password to node.js and run app.js to get cookie
+                p = subprocess.Popen(['node', 'app.js', email, password], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+                stdout, sterr = p.communicate()
+                headers = json.loads(stdout)
+                cookies = headers.get('set-cookie')[0]
+
+        if cookies:
+            pairs = [pair.split('=') for pair in filter(lambda x: x!='', cookies.split(';'))]
+            self.cookies = dict((pair[0], pair[1]) for pair in pairs)            
 
     def get_contacts(self):
         r = requests.get(self.__class__.CONTACTS_URL, cookies=self.cookies, params={
